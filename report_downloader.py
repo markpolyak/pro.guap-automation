@@ -184,7 +184,7 @@ def process_reports(
         # remove all non-alphanumeric characters from task name (see https://stackoverflow.com/a/13593932)
         task_name = re.sub('[^\w\-_\. ]', '_', task['name'])
         # truncate to 255 characters in order to support Windows
-        task_name = task_name[:255]
+        task_name = task_name.strip()[:255]
         # build full path and create missing subdirs if any
         path = os.path.join(output_dir, task['subject_name'][0], report['group_num'], task_name)
         os.makedirs(path, exist_ok=True)
@@ -202,7 +202,7 @@ def process_reports(
             filename_suffix_id = 1
             while os.path.isfile(new_filename):
                 new_filename_upd = os.path.join(path, f"{report['user_fio']} [{report['status_name']}]({filename_suffix_id}){original_extension}")
-                logger.warning("File already '%s' exists. Will attempt to save file as '%s'", new_filename, new_filename_upd)
+                logger.warning("File '%s' already exists. Will attempt to save file as '%s'", new_filename, new_filename_upd)
                 new_filename = new_filename_upd
                 filename_suffix_id += 1
         if not dry_run:

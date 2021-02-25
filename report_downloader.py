@@ -159,20 +159,25 @@ def process_reports(
     dry_run=False, keep_old=False, downloaded_reports={}, log_file=None
 ):
     # get reports
-    # process_reports(sess, tasks[task_id], params.output_dir, params.dry_run)
     res = sess.post(f"https://pro.guap.ru/gettask/{task['id']}", json={"task_id": task['id']})
-    # reports_per_group = {}
-    logger.info("Reports will be saved to '%s'", output_dir)
+    # remove all non-alphanumeric characters from task name (see https://stackoverflow.com/a/13593932)
+    task_name = re.sub('[^\w\-_\. ]', '_', task['name'])
+    # remove trailing whitespaces and truncate to 255 characters in order to support Windows
+    task_name = task_name.strip()[:255]
+    logger.info("Reports for task '%s' will be saved to '%s'", task_name, output_dir)
     saved_reports_count = 0
     for report in res.json()['reports']['reports']:
         # skip reports without a filelink
         if not report['filelink']: #  or (ignore_rejected and report['status'] == '3')
+            logger.debug("Report from '%s' (%s) has no file link and will be skipped (nothing to download)", report['user_fio'], report['group_num'])
             continue
         # skip reports that were already downloaded
         if report['filelink'] in downloaded_reports:
+            logger.debug("Report '%s' already downloaded to '%s' and will be skipped", report['filelink'], downloaded_reports[report['filelink']])
             continue
         # skip reports from unwanted groups
         if group_filter and report['group_num'] not in group_filter:
+            logger.debug("Report from group '%s' (%s) is ignored by filter", report['group_num'], report['user_fio'])
             continue
         # skip reports with unwanted status
         if (
@@ -180,11 +185,8 @@ def process_reports(
             or (report['status'] == '2' and 'accepted' not in status_filter) # and report['status_name'] == 'принят'
             or (report['status'] == '3' and 'rejected' not in status_filter) # and report['status_name'] == 'не принят'
         ):
+            logger.debug("Report with status '%s' from '%s' (%s) is ignored by filter", report['status_name'], report['user_fio'], report['group_num'])
             continue
-        # remove all non-alphanumeric characters from task name (see https://stackoverflow.com/a/13593932)
-        task_name = re.sub('[^\w\-_\. ]', '_', task['name'])
-        # remove trailing whitespaces and truncate to 255 characters in order to support Windows
-        task_name = task_name.strip()[:255]
         # build full path and create missing subdirs if any
         path = os.path.join(output_dir, task['subject_name'][0], report['group_num'], task_name)
         os.makedirs(path, exist_ok=True)

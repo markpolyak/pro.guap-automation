@@ -183,7 +183,7 @@ def process_reports(
             continue
         # remove all non-alphanumeric characters from task name (see https://stackoverflow.com/a/13593932)
         task_name = re.sub('[^\w\-_\. ]', '_', task['name'])
-        # truncate to 255 characters in order to support Windows
+        # remove trailing whitespaces and truncate to 255 characters in order to support Windows
         task_name = task_name.strip()[:255]
         # build full path and create missing subdirs if any
         path = os.path.join(output_dir, task['subject_name'][0], report['group_num'], task_name)
